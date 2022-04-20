@@ -71,8 +71,8 @@ def schrage(data):
 def schrage_div(data):
     n = len(data)
     t = 0                                           # total time
-    N = PriorityQueue(itemgetter(0), True, [])      # list of unordered tasks
-    G = PriorityQueue(itemgetter(2), False, [])     # list of ready to implementation tasks
+    N = PriorityQueue(lambda i: i[0], True, [])      # list of unordered tasks
+    G = PriorityQueue(lambda i: i[0], False, [])     # list of ready to implementation tasks
 
     C_max = 0
     pi = []
