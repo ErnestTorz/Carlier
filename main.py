@@ -4,17 +4,15 @@ from operator import itemgetter
 import copy
 import timeit
 import time
-
-
 class PriorityQueue:
 
-    def __init__(self, key, rev, l):
+    def __init__(self, key, rev, list):
         self._key = key
         self._rev = rev
-        if len(l) == 0:
+        if len(list) == 0:
             self._list = []
         else:
-            self._list = l.sort(key=key, reverse=rev)
+            self._list = list.sort(key=key, reverse=rev)
 
     def delete(self):
         self._list.pop(-1)
@@ -35,20 +33,6 @@ class PriorityQueue:
     def get_r(self, nb):
         return self._list[-1][1]
 
-def read(nb):
-    lst = []
-    with open('data\\SCHRAGE' + str(nb) + '.DAT') as f:
-        f.readline() #pominięcie n
-        for i in f:
-            n, x, y, z = i.split()
-            lst.append([int(n), int(x), int(y), int(z)])
-    return sorted(lst, key=lambda i: i[1]) # sortowanie po r
-
-def get_anwser(nb):
-    with open('data\\CARLIER' + str(nb) + '.OUT') as f:
-        x = f.readline() #pominięcie n
-    return x
-
 def schrage(data):
     t = 0
     k = 0
@@ -62,13 +46,13 @@ def schrage(data):
     for i in range(0, len(data)):
         N.add([int(data[i][0]), int(data[i][1]), int(data[i][2]), int(data[i][3])])
 
-    while G.is_empty() is False or N.is_empty() is False:  # 2
-        while N.is_empty() is False and int(N.get_r(0)) <= t:  # 3
+    while G.is_empty() is False or N.is_empty() is False:  
+        while N.is_empty() is False and int(N.get_r(0)) <= t:  
             e = N.get_element()
             G.add(e)
             N.delete()
-        if G.is_empty() is True:                                     # 5
-            t = int(N.get_r(0))                                    # 6
+        if G.is_empty() is True:                                     
+            t = int(N.get_r(0))                                   
         else:
             e = G.get_element()
             G.delete()
@@ -79,8 +63,6 @@ def schrage(data):
                 b = k
             k += 1
             
-
-
     return pi,C_max,b
 
 def schrage_div(data):
@@ -109,8 +91,8 @@ def schrage_div(data):
                 if onMachine[2] > 0:
                     G.add(onMachine)
 
-        if G.is_empty() is True:                                     # 5
-            t = int(N.get_r(0))                                    # 6
+        if G.is_empty() is True:                                     
+            t = int(N.get_r(0))                                    
         else:
             e = G.get_element()
             G.delete()
@@ -182,25 +164,24 @@ def carlier(lst):
 
     return Cmax,lst 
 
-def test(start, end):
-    for i in range(start,end+1):
-        tasks = read(i)
-        start_time = time.time()
-        Cmax, result = carlier(tasks)
-        execution_time = time.time() - start_time
-        print('Carlier: ' + str(Cmax) +' | ' + 'Odp: '+ str(get_anwser(i)) + ' | Czas: ' + str(execution_time))
-        #print(result)
 
-
-
-test(1,10)
-    
-
-
-
-
-
-
-
-
-
+if __name__ == '__main__':
+    tasks=[
+    #   nr, r , p, q
+        [1, 28, 5, 7], 
+        [2, 13, 6, 26], 
+        [3, 11, 7, 24], 
+        [4, 20, 4, 21], 
+        [5, 30, 3, 8], 
+        [6, 0, 6, 17], 
+        [7, 30, 2, 0]
+    ]
+    print("Dane wejsciowe, w formacie [nr, r, p, q] :")
+    print (*tasks, sep = "\n")
+    start_time = time.time()
+    Cmax, result = carlier(tasks)
+    execution_time = time.time() - start_time
+    print()
+    print("Wynik: "+" CMAX = " + str(Cmax)+"  Czas: " + str(execution_time)+" s" )
+    print("Dane wyjsciowe, w formacie [nr, r, p, q] :")
+    print(*result, sep="\n")
