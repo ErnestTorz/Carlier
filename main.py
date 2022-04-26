@@ -17,18 +17,11 @@ class PriorityQueue:
             self._list = l.sort(key=key, reverse=rev)
 
     def delete(self):
-        self._list.pop(len(self._list)-1)
+        self._list.pop(-1)
 
     def add(self, val):
         self._list.append(val)
         self._list.sort(key=self._key, reverse=self._rev)
-        # print(f"key = {self._key}, list = {self._list}")
-
-    def display(self):
-        print(self._list)
-
-    def return_list(self):
-        return self._list
 
     def is_empty(self):
         if len(self._list) == 0:
@@ -37,11 +30,10 @@ class PriorityQueue:
             return False
 
     def get_element(self):
-        return self._list[len(self._list)-1]
+        return self._list[-1]
 
     def get_r(self, nb):
-        # print("r getted")
-        return self._list[len(self._list)-1][0]
+        return self._list[-1][0]
 
 def read(nb):
     lst = []
@@ -165,7 +157,7 @@ def carlier(lst):
     a = findA(lst, b, Cmax) # pozycja pierwszego zadania w ścieżce krytycznej
     c = findC(lst, a, b) # zadanie o jak najwyższej pozycji ale z mniejszym q_pi_j < q_pi_b
     if not c: # jeśli nie znaleziono takiego to c_max jest roziwązaniem optymalnym
-        return Cmax
+        return Cmax,lst 
 
     rprim, pprim, qprim = findRPQprim(lst, b, c) # min r, max q, suma czasów wykonania zadań - w bloku (c+1, b)
     r_saved = lst[c][0] # zapisz r
@@ -173,7 +165,8 @@ def carlier(lst):
     LB = schrage_div(copy.deepcopy(lst)) # sprawdzamy dolne ograniczenie schrage z podziałem  - dla wszystkich permutacji spełniających to wymaganie
 
     if LB < Cmax: # sprawdź czy rozwiązanie jest obiecujące
-        Cmax = min(Cmax, carlier(lst)) # wywołaj carliera jeszcze raz dla nowego problemu
+        pomCmax, pomlst = carlier(lst)
+        Cmax = min(Cmax, pomCmax) # wywołaj carliera jeszcze raz dla nowego problemu
 
     lst[c][0] = r_saved # odtwórz r
 
@@ -182,19 +175,21 @@ def carlier(lst):
     LB = schrage_div(copy.deepcopy(lst)) # sprawdź czy taki problem jest obiecujący
 
     if LB < Cmax:
-        Cmax = min(Cmax, carlier(lst))
+        pomCmax, pomlst = carlier(lst)
+        Cmax = min(Cmax, pomCmax)
 
     lst[c][2] = q_saved # przywróc q
 
-    return Cmax
+    return Cmax,lst 
 
 def test(start, end):
     for i in range(start,end+1):
         tasks = read(i)
         start_time = time.time()
-        result = carlier(tasks)
+        Cmax, result = carlier(tasks)
         execution_time = time.time() - start_time
-        print('Carlier: ' + str(result) +' | ' + 'Odp: '+ str(get_anwser(i)) + ' | Czas: ' + str(execution_time))
+        print('Carlier: ' + str(Cmax) +' | ' + 'Odp: '+ str(get_anwser(i)) + ' | Czas: ' + str(execution_time))
+        #print(result)
 
 
 
