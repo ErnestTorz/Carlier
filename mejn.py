@@ -1,3 +1,4 @@
+import copy
 from operator import attrgetter
 
 class Task:
@@ -14,15 +15,16 @@ class Maszyna:
     def __init__(self, tasks):
         # list of Task classes representing problems 
         self._tasks = tasks
-        self._carlier()
+        self.Cmax, self.pi = self._carlier(self._tasks)
 
-    def _schrage(self):
+    def _schrage(self, tasks):
         # końcowa kolejka wykonywania zadań na maszynie
         pi = []
         k = 0
+        Cmax = 0
         # zbiór gotowych zadań do realizacji
         G = []
-        N = self._tasks
+        N = copy.deepcopy(tasks)
         get_min_task_r = lambda: min(N, key=attrgetter('r'))
         get_max_task_q = lambda: max(G, key=attrgetter('q'))
         t = get_min_task_r().r
@@ -33,19 +35,22 @@ class Maszyna:
                 G.append(N.pop(j_prime))
             if G:
                 j_prime = G.index(get_max_task_q())
-                pi.append(G.pop(j_prime))
-                t = t + pi[k].p
+                element = G.pop(j_prime)
+                pi.append(element)
+                t += pi[k].p
+                if Cmax <= (t + element.q):
+                    Cmax = t + element.q
+                    b = k
                 k += 1
-                print(t)
             else:
                 t = get_min_task_r().r
 
-        return pi
+        return pi, Cmax, k
 
-    def _schrage_pmtn(self):
+    def _schrage_pmtn(self, tasks):
         Cmax = 0
         G = []
-        N = self._tasks
+        N = copy.deepcopy(tasks)
         t = 0
         # zmienna pomocnicza do przetrzymywania tasku 
         help2 = Task(-1, 0, 0, float('inf'))
@@ -66,22 +71,72 @@ class Maszyna:
             if G:
                 j_prime = G.index(get_max_task_q())
                 help2 = G.pop(j_prime)
-                t = t + help2.p
+                t += help2.p
                 Cmax = max(Cmax, t + help2.q)
             else:
                 t = get_min_task_r().r
 
         return Cmax
 
+    def _compute_a(self, pi, b, Cmax):  # sourcery skip: avoid-builtin-shadow
+        a = 0
+        s = 0
+        s = sum(pi[i].p for i in range(b))
+        while a < b and Cmax != pi[a].r + pi[b-1].q + s:
+            s -= pi[a].p
+            a += 1
+        return a
 
+    def _compute_c(self, pi, a, b):
+        return next((i for i in range(b - 1, a - 1, -1) if pi[i].q < pi[b].q), None)
+
+    def _compute_rpq_prime(self, pi, b, c):
+        r_prim = pi[c + 1].r
+        p_prim = 0
+        q_prim = pi[c + 1].q
+
+        for i in range(c + 1, b + 1):
+            if pi[i][1] < r_prim:
+                r_prim = pi[i].r
+            if pi[i][3] < q_prim:
+                q_prim = pi[i].q
+            p_prim += pi[i].p
+
+        return r_prim, p_prim, q_prim
+        
         
 
+    def _carlier(self, tasks):
+        pi, Cmax, b = self._schrage(tasks) # pi - permutacja zadań, C-max - górne oszacowanie, b - pozycja ostatniego w ścieżce krytycznej
+        a = self._compute_a(pi, b, Cmax) # pozycja pierwszego zadania w ścieżce krytycznej
+        c = self._compute_c(pi, a, b) # zadanie o jak najwyższej pozycji ale z mniejszym q_pi_j < q_pi_b
+        if not c: # jeśli nie znaleziono takiego to c_max jest roziwązaniem optymalnym
+            return Cmax,pi 
 
-    
-    def _carlier(self):
-        Cmax = self._schrage_pmtn()
-        print(Cmax)
-        # print(*pi, sep='\n')
+        rprim, pprim, qprim = self._find_rpq_prim(pi, b, c) # min r, max q, suma czasów wykonania zadań - w bloku (c+1, b)
+        r_saved = pi[c].r # zapisz r
+        pi[c].r = max(pi[c].r, rprim + pprim) # modyfikacja terminu dostępności zadania c, wymusi to jego późniejszą realizację, za wszystkimi zadaniami w bloku(c+1, b)
+        LB = self._schrage_pmtn(pi) # sprawdzamy dolne ograniczenie schrage z podziałem  - dla wszystkich permutacji spełniających to wymaganie
+
+        if LB < Cmax: # sprawdź czy rozwiązanie jest obiecujące
+            pomCmax, pompi = self._carlier(pi)
+            Cmax = min(Cmax, pomCmax) # wywołaj carliera jeszcze raz dla nowego problemu
+
+        pi[c].r = r_saved # odtwórz r
+
+        q_saved = pi[c].q
+        pi[c].q = max(pi[c].q, pprim + qprim) # wymuszenie aby zadanie c było wykonywane przed wszystkimi zadaniami w bloku (c+1, b)
+        LB = self._schrage_pmtn(pi) # sprawdź czy taki problem jest obiecujący
+
+        if LB < Cmax:
+            pomCmax, pompi = self._carlier(pi)
+            Cmax = min(Cmax, pomCmax)
+
+        pi[c].q = q_saved # przywróc q
+
+        return Cmax,pi 
+            
+
 
 tasks=[
     [1, 28, 5, 7], 
@@ -95,4 +150,10 @@ tasks=[
 
 
 if __name__ == '__main__':
-    run_machine = Maszyna([Task(*task) for task in tasks])
+    list_of_tasks = [Task(*task) for task in tasks]
+    run_machine = Maszyna(list_of_tasks)
+
+    Cmax, pi = run_machine.Cmax, run_machine.pi
+
+    print(Cmax)
+    print(*pi, sep='\n')
